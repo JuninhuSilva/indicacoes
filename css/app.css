@@ -72,30 +72,26 @@ main { max-width: 600px; margin: 0 auto; padding: 4px 16px 0; }
 main:focus { outline: none; }
 
 /* ---------- Resumo de comissões (destaque do painel) ---------- */
-.resumo { background: #FDECEC; color: var(--tinta); border: 1px solid #F6CFCF; border-radius: var(--raio-g); padding: 20px 20px 18px; }
-.resumo-topo { display: flex; justify-content: space-between; font-size: 15px; color: var(--tinta-suave); }
-.resumo-topo span:first-child { display: flex; align-items: center; gap: 6px; }
-.resumo-topo span:first-child::before { content: ""; width: 12px; height: 12px; border-radius: 3px; background: #D10000; }
+.resumo { background: #1C2A27; color: #F4F7F3; border-radius: var(--raio-g); padding: 20px 20px 18px; }
+.resumo-topo { display: flex; justify-content: space-between; font-size: 15px; color: #B6C4BE; }
 .resumo-valor {
-  margin: 4px 0 16px; color: #B80000;
+  margin: 4px 0 16px;
   font-size: clamp(52px, 16vw, 72px); font-weight: 800; line-height: 0.95;
   letter-spacing: -0.04em; font-variant-numeric: tabular-nums;
 }
 .barra {
-  height: 16px; border-radius: 8px; overflow: hidden;
-  display: flex; gap: 2px;
-  background: repeating-linear-gradient(-45deg, #F4BDBD 0 5px, #FFFFFF 5px 10px);
-  box-shadow: inset 0 0 0 1px #F2C4C4;
+  height: 14px; border-radius: 7px; overflow: hidden; display: flex;
+  background: repeating-linear-gradient(-45deg, #3A4F47 0 6px, #2B3D37 6px 12px);
 }
 .barra span { display: block; height: 100%; flex: none; }
-.barra-recebido { background: #D10000; }
-.barra-receber { background: #F08A8A; }
+.barra-recebido { background: #62D3A2; }
+.barra-receber { background: #2E8F68; }
 .resumo-dados { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0 0; }
-.resumo-dados dt { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--tinta-suave); }
+.resumo-dados dt { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #B6C4BE; }
 .resumo-dados dd { margin: 0; font-size: 21px; font-weight: 720; font-variant-numeric: tabular-nums; }
 .amostra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
-.amostra-prevista { background: repeating-linear-gradient(-45deg, #EE9C9C 0 3px, #FFFFFF 3px 6px); box-shadow: inset 0 0 0 1px #EBAAAA; }
-.amostra-receber { background: #F08A8A; }
+.amostra-prevista { background: repeating-linear-gradient(-45deg, #5A7268 0 3px, #3A4F47 3px 6px); }
+.amostra-receber { background: #2E8F68; }
 
 /* ---------- Contagem por status ---------- */
 .estado-indicado, .ponto-indicado { --c: var(--cinza); }
