@@ -1,6 +1,7 @@
 // Exportação CSV compatível com Excel em português (separador ";" e UTF-8 com BOM).
 import { PLANOS, STATUS } from './config.js';
-import { dataHora, hojeISO } from './ui.js';
+import { dataHora, hojeISO, diaMesAno } from './ui.js';
+import { instalado } from './calculos.js';
 
 function celula(v) {
   let s = String(v ?? '');
@@ -9,12 +10,16 @@ function celula(v) {
 }
 
 export function gerarCSV(lista) {
-  const cabecalho = ['Data da indicação', 'Cliente', 'Contacto', 'Plano', 'Status', 'Comissão (€)', 'Comissão recebida (€)', 'Lembrete', 'Lembrete concluído', 'Última alteração'];
+  const cabecalho = ['Data da indicação', 'Cliente', 'Contacto', 'Plano', 'Status', 'Data da instalação', 'Comissão (€)',
+    'Comissão recebida (€)', 'Comissão a receber (€)', 'Notas', 'Lembrete', 'Lembrete concluído', 'Última alteração'];
   const linhas = lista.map((i) => {
     const p = PLANOS[i.plano];
+    const pago = instalado(i);
     return [
       dataHora(i.dataIndicacao), i.nome, i.telefone, p.nome, STATUS[i.status].nome,
-      p.comissao, i.status === 'fechado' ? p.comissao : 0,
+      i.status === 'fechado' && i.instalacao?.data ? diaMesAno(i.instalacao.data) : '',
+      p.comissao, pago ? p.comissao : 0, i.status === 'fechado' && !pago ? p.comissao : 0,
+      i.notas || '',
       i.lembrete ? dataHora(i.lembrete.quando) : '',
       i.lembrete ? (i.lembrete.feito ? 'Sim' : 'Não') : '',
       dataHora(i.atualizado || i.dataIndicacao),

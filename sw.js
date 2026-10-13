@@ -1,11 +1,11 @@
 // Service worker: funciona offline e mostra as notificações dos lembretes.
 // Ao publicar uma versão nova, muda VERSAO para limpar a cache antiga.
-const VERSAO = 'v1';
+const VERSAO = 'v2';
 const CACHE = `indicacoes-${VERSAO}`;
 const FICHEIROS = [
   './', './index.html', './css/app.css', './manifest.webmanifest',
   './js/app.js', './js/config.js', './js/store.js', './js/calculos.js', './js/views.js',
-  './js/ui.js', './js/lembretes.js', './js/exportar.js',
+  './js/ui.js', './js/lembretes.js', './js/exportar.js', './js/vendedor.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/badge-96.png',
 ];
 
@@ -15,6 +15,7 @@ const DB_VERSAO = 1;
 const STORE = 'indicacoes';
 const PLANOS = { '4P': ['4P', 180], '3P': ['3P', 120], '1P2P': ['1P/2P', 80] };
 const ABERTOS = ['indicado', 'negociacao'];
+const HORA_INSTALACAO = 9; // manter igual a js/config.js
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FICHEIROS)).then(() => self.skipWaiting()));
@@ -70,35 +71,46 @@ async function verificarLembretes() {
     r.onerror = () => reject(r.error);
   });
   const agora = Date.now();
-  const devidos = lista.filter((i) => i.lembrete && !i.lembrete.feito && !i.lembrete.notificado
+  const hh = String(HORA_INSTALACAO).padStart(2, '0');
+  // Lembretes para contactar o cliente
+  const contactos = lista.filter((i) => i.lembrete && !i.lembrete.feito && !i.lembrete.notificado
     && ABERTOS.includes(i.status) && new Date(i.lembrete.quando).getTime() <= agora);
+  // Dia da instalação (às HORA_INSTALACAO)
+  const instalacoes = lista.filter((i) => i.status === 'fechado' && i.instalacao?.data && !i.instalacao.notificado
+    && new Date(`${i.instalacao.data}T${hh}:00`).getTime() <= agora);
 
   const mostrados = [];
-  for (const i of devidos) {
-    const [plano, valor] = PLANOS[i.plano] || [i.plano, 0];
+  const avisar = async (i, tipo, titulo, corpo) => {
     try {
-      await self.registration.showNotification(`Contactar ${i.nome}`, {
-        body: `Plano ${plano} (${valor} €)${i.telefone ? `. Contacto: ${i.telefone}` : ''}. Toca para abrir.`,
-        tag: `lembrete-${i.id}`,
-        data: { id: i.id },
-        icon: 'icons/icon-192.png',
-        badge: 'icons/badge-96.png',
-        requireInteraction: true,
-        vibrate: [200, 100, 200],
+      await self.registration.showNotification(titulo, {
+        body: corpo, tag: `${tipo}-${i.id}`, data: { id: i.id },
+        icon: 'icons/icon-192.png', badge: 'icons/badge-96.png',
+        requireInteraction: true, vibrate: [200, 100, 200],
       });
-      mostrados.push(i.id);
+      mostrados.push([i.id, tipo]);
     } catch { /* sem permissão: tenta de novo mais tarde */ }
+  };
+  for (const i of contactos) {
+    const [plano, valor] = PLANOS[i.plano] || [i.plano, 0];
+    await avisar(i, 'lembrete', `Contactar ${i.nome}`,
+      `Plano ${plano} (${valor} €)${i.telefone ? `. Contacto: ${i.telefone}` : ''}. Toca para abrir.`);
+  }
+  for (const i of instalacoes) {
+    const [plano, valor] = PLANOS[i.plano] || [i.plano, 0];
+    await avisar(i, 'instalacao', `Instalação hoje: ${i.nome}`,
+      `Plano ${plano}. Comissão de ${valor} € a receber com esta instalação.`);
   }
 
   if (mostrados.length) {
     await new Promise((resolve, reject) => {
       const t = db.transaction(STORE, 'readwrite');
       const s = t.objectStore(STORE);
-      for (const id of mostrados) {
+      for (const [id, tipo] of mostrados) {
         const g = s.get(id);
         g.onsuccess = () => {
           const x = g.result;
-          if (x?.lembrete && !x.lembrete.feito) { x.lembrete.notificado = true; s.put(x); }
+          if (tipo === 'lembrete' && x?.lembrete && !x.lembrete.feito) { x.lembrete.notificado = true; s.put(x); }
+          if (tipo === 'instalacao' && x?.instalacao) { x.instalacao.notificado = true; s.put(x); }
         };
       }
       t.oncomplete = resolve;

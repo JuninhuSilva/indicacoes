@@ -10,6 +10,9 @@ const opHora = { hour: '2-digit', minute: '2-digit' };
 export const dataCurta = (iso) => new Date(iso).toLocaleDateString('pt-PT', opData);
 export const hora = (iso) => new Date(iso).toLocaleTimeString('pt-PT', opHora);
 export const dataHora = (iso) => `${dataCurta(iso)} às ${hora(iso)}`;
+// 'YYYY-MM-DD' → '20/10' (sem problemas de fuso horário)
+export const diaMes = (ymd) => ymd.split('-').reverse().slice(0, 2).join('/');
+export const diaMesAno = (ymd) => ymd.split('-').reverse().join('/');
 
 export function relativo(iso, agora = new Date()) {
   const d = new Date(iso);
@@ -69,5 +72,8 @@ const P = {
   sino: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
   calendario: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   certo: '<path d="M20 6 9 17l-5-5"/>',
+  enviar: '<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>',
+  casa: '<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  nota: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
 };
 export const icone = (n) => `<svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;

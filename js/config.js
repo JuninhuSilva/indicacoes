@@ -23,6 +23,7 @@ export const PRAZOS = [
 
 export const PRAZO_PADRAO = 7;
 export const HORA_LEMBRETE = 10; // hora a que os lembretes por prazo disparam
+export const HORA_INSTALACAO = 9; // hora da notificação no dia da instalação (manter igual no sw.js)
 
 // Partilhado com o sw.js (manter iguais).
 export const DB = { nome: 'controlo-indicacoes', versao: 1, store: 'indicacoes' };

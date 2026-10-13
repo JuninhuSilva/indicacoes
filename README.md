@@ -43,6 +43,7 @@ js/store.js             armazenamento local (trocar aqui para sincronizar com a 
 js/calculos.js          totais, comissões e datas
 js/lembretes.js         notificações e ficheiro de calendário
 js/exportar.js          CSV
+js/vendedor.js          envio ao vendedor por WhatsApp
 js/views.js             telas
 js/app.js               navegação e botões
 icons/                  ícones da app

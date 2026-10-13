@@ -6,11 +6,12 @@ import { toast, descarregar, soDigitos, limparNome, limparTelefone } from './ui.
 import { calcularQuando, adiar } from './calculos.js';
 import * as L from './lembretes.js';
 import { gerarCSV, nomeFicheiroCSV, podePartilhar } from './exportar.js';
+import { lerVendedor, guardarVendedor } from './vendedor.js';
 
 const app = document.getElementById('app');
 const titulo = document.getElementById('titulo');
 const voltar = document.getElementById('voltar');
-const estado = { lista: [], busca: '' };
+const estado = { lista: [], busca: '', vendedor: lerVendedor() };
 
 function rota() {
   const [nome, param = ''] = location.hash.replace(/^#\/?/, '').split('/');
@@ -68,6 +69,16 @@ function lerCliente(f) {
   return { nome, telefone, plano };
 }
 
+const lerNotas = (f) => (f.elements.notas?.value || '').trim();
+
+// Muda o status e regista no histórico (sair de Fechado apaga a data de instalação)
+function mudarStatus(i, v) {
+  if (i.status === v) return;
+  i.status = v;
+  i.historico.push({ status: v, em: new Date().toISOString() });
+  if (v !== 'fechado') delete i.instalacao;
+}
+
 function duplicado(telefone, ignorarId) {
   const d = soDigitos(telefone);
   return d.length >= 6 && estado.lista.find((i) => i.id !== ignorarId && soDigitos(i.telefone) === d);
@@ -83,7 +94,7 @@ const formularios = {
     if (lembrete) L.pedirPermissao(); // pedido ainda dentro do toque no botão
     const agora = new Date().toISOString();
     const item = {
-      id: store.novoId(), ...cliente, status: 'indicado',
+      id: store.novoId(), ...cliente, notas: lerNotas(f), status: 'indicado',
       dataIndicacao: agora, atualizado: agora, lembrete,
       historico: [{ status: 'indicado', em: agora }],
     };
@@ -100,6 +111,34 @@ const formularios = {
     await store.atualizar(f.dataset.id, (i) => Object.assign(i, cliente));
     await recarregar(); render();
     toast('Dados corrigidos');
+  },
+
+  async 'form-notas'(f) {
+    const notas = lerNotas(f);
+    await store.atualizar(f.dataset.id, (i) => { i.notas = notas; });
+    await recarregar();
+    toast(notas ? 'Notas guardadas' : 'Notas apagadas');
+  },
+
+  async 'form-instalacao'(f) {
+    const data = f.elements.instalacao.value;
+    if (!data) { f.elements.instalacao.focus(); throw new Error('Escolhe a data da instalação'); }
+    L.pedirPermissao();
+    const antes = estado.lista.find((x) => x.id === f.dataset.id)?.status;
+    const item = await store.atualizar(f.dataset.id, (i) => {
+      mudarStatus(i, 'fechado');
+      i.instalacao = { data, notificado: false };
+    });
+    await recarregar(); render();
+    toast(antes === 'fechado' ? 'Data da instalação atualizada' : `Fechado! ${PLANOS[item.plano].comissao} € a receber na instalação`);
+    L.verificarAgora();
+  },
+
+  'form-vendedor'(f) {
+    const num = limparTelefone(f.elements.vendedor.value);
+    guardarVendedor(num);
+    estado.vendedor = num;
+    toast(num ? 'Número do vendedor guardado' : 'Número do vendedor removido');
   },
 
   async 'form-lembrete'(f) {
@@ -132,11 +171,30 @@ const acoes = {
 
   async status(b) {
     const v = b.dataset.valor;
-    const item = await store.atualizar(b.dataset.id, (i) => {
-      if (i.status !== v) { i.status = v; i.historico.push({ status: v, em: new Date().toISOString() }); }
-    });
+    const atual = estado.lista.find((x) => x.id === b.dataset.id)?.status;
+    if (v === atual) return;
+    if (v === 'fechado') {
+      // Fechado pede primeiro a data da instalação
+      const f = document.getElementById('form-instalacao');
+      f.hidden = false;
+      f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      f.elements.instalacao.focus();
+      return;
+    }
+    await store.atualizar(b.dataset.id, (i) => mudarStatus(i, v));
     await recarregar(); render();
-    toast(v === 'fechado' ? `Fechado! +${PLANOS[item.plano].comissao} € de comissão` : `Status: ${STATUS[v].nome}`);
+    toast(`Status: ${STATUS[v].nome}`);
+  },
+
+  async 'fechar-sem-data'(b) {
+    const item = await store.atualizar(b.dataset.id, (i) => { mudarStatus(i, 'fechado'); i.instalacao = null; });
+    await recarregar(); render();
+    toast(`Fechado! ${PLANOS[item.plano].comissao} € a receber. Falta marcar a instalação.`);
+  },
+
+  async 'calendario-instalacao'(b) {
+    L.descarregarICS(await store.obter(b.dataset.id), 'instalacao');
+    toast('Abre o ficheiro para o adicionar ao calendário');
   },
 
   async contactei(b) {
@@ -232,7 +290,7 @@ window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); }
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible') return;
   await recarregar();
-  if (rota().nome !== 'nova' && !document.querySelector('form:not([hidden]) input:focus')) render();
+  if (rota().nome !== 'nova' && !document.querySelector('form:not([hidden]) :is(input, textarea):focus')) render();
   L.verificarAgora();
 });
 
