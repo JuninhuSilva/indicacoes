@@ -1,6 +1,6 @@
 // Service worker: funciona offline e mostra as notificações dos lembretes.
 // Ao publicar uma versão nova, muda VERSAO para limpar a cache antiga.
-const VERSAO = 'v2';
+const VERSAO = 'v3';
 const CACHE = `indicacoes-${VERSAO}`;
 const FICHEIROS = [
   './', './index.html', './css/app.css', './manifest.webmanifest',
